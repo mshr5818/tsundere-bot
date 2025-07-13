@@ -138,6 +138,12 @@ respons_map = {
         "ど、どうせ冗談でしょ？……え、本気…？わ、私も…かも。",
         ]
         }
+def get_response(keyword: str) -> str:
+    responses = response_map.get(keyword)
+    if responses:
+        return random.choice(responses)
+    else:
+        return "なにそれ？…あんたの言ってること、意味わかんないんだけど。"
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0" , port=5000)
