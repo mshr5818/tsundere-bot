@@ -145,5 +145,21 @@ def get_response(keyword: str) -> str:
     else:
         return "なにそれ？…あんたの言ってること、意味わかんないんだけど。"
 
+def handle_message(event):
+    print(f"Received message: {event.message.text}")
+    user_text = event.message.text.lower()
+
+    for keyword in response_map.keys():
+        if keyword in user_text:
+            reply = get_response(keyword)
+            break
+    else:
+        reply = "なにそれ？…あんたの言ってること、意味わかんないんだけど。"
+
+    line_bot_api.reply_message(
+        event.reply_token,
+        TextSendMessage(text=reply)
+    )
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0" , port=5000)
