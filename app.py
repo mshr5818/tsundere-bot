@@ -1,165 +1,124 @@
 from flask import Flask, request, abort
 from linebot import LineBotApi, WebhookHandler
-from linebot.exceptions import InvalidSignatureError
+from linebot.exceptions import InvalidSignatureError, LineBotApiError
 from linebot.models import MessageEvent, TextMessage, TextSendMessage
 import random
 from dotenv import load_dotenv
 import os
 
-
-
+# Flaskアプリの準備
 app = Flask(__name__)
 
+# .envファイルから環境変数読み込み
 load_dotenv()
-
 LINE_CHANNEL_ACCESS_TOKEN = os.getenv("LINE_CHANNEL_ACCESS_TOKEN")
 LINE_CHANNEL_SECRET = os.getenv("LINE_CHANNEL_SECRET")
 
-print("Access Token:", LINE_CHANNEL_ACCESS_TOKEN)
-print("Channel Secret:", LINE_CHANNEL_SECRET)
-
+# LINE BOT APIとWebhook Handlerの初期化
 line_bot_api = LineBotApi(LINE_CHANNEL_ACCESS_TOKEN)
 handler = WebhookHandler(LINE_CHANNEL_SECRET)
 
-# ツンデレな返事リスト
+# ツンデレの通常返信（ランダムに使われる）
 tsundere_replies = [
     "べ、別にあんたのために返信したわけじゃないんだからね！？",
     "暇だったから返信してあげただけよ！",
     "ちょっと…そんなに話しかけないでよ。……でも嫌いじゃないけど。",
     "あ、ありがとう…って言うと思った？べ、別に嬉しくなんかないし！",
-    "そんなこと言われても嬉しくないし！ちょっとだけ…ちょっとだけね！",
-    "ちょっと…そんなに話しかけないでよ。…でも、たまには悪くないかも。",
+    "ちょっとだけ…ちょっとだけね！嬉しいかも…",
     "バカ！って言いたくなるけど、ちょっと心配になっちゃうんだからね。",
     "なんであんたばっかり優しくするのよ！ズルいじゃない！",
-    "あんたがいなかったら、つまんないんだから…分かってよね。",
     "ふん、別に心配してるわけじゃないんだからね！勘違いしないでよ！",
     "もう、なんでそんなにしつこいのよ！…でも、無視できないわ。",
     "あんたのことなんてどうでもいいけど…返事くらいはしてあげるわよ。",
-    "つまんないこと言わないでよ…でも、聞いてあげてもいいわよ？",
-    "なんで私があんたなんかに優しくしなきゃいけないのよ！…でも、まあいいわ。",
     "うるさい！でも、たまに面白いこと言うじゃない。",
-    "あんたのこと、バカにしてるわけじゃないんだからね！ほんとよ！",
     "うぅん、別に好きとかじゃないけど…ちょっと気になるだけよ。",
-    "ふーん、そんなこと言うなんて…ちょっとだけ認めてあげるわ。",
-    "べ、別に寂しくなんてないけど…ちょっとだけ話してあげてもいいわよ？",
-    "べ、別にあんたのために返信したわけじゃないんだからね！でも…ちょっと嬉しいかも。",
-    "あんたって、意外と悪くないのよね…ほんのちょっとだけど。",
-    "ちょっとだけよ？あんたのこと、少しは気にしてるんだからね。",
-    "バカ…でも、そんなあんたが好きだったりするんだから！",
-    "あんたのこと、嫌いじゃないって言ってるでしょ！素直になりなさいよね！",
-    "ほんとはもっと話したいけど…恥ずかしいんだから我慢してるのよ！",
-    "なんでそんなに優しいのよ…ちょっと、ドキドキしちゃうじゃない。",
-    "別にあんたのことなんて…いや、やっぱりちょっと好きかも。",
-    "うるさい！でも、あんたがいないと寂しいんだからね！",
-    "素直に『好き』って言えないけど…私の気持ちは伝わってるんだから！",
     "しょうがないから相手してあげるわよ。でも勘違いしないでね？",
-    "あんたってば、本当はかわいいんだから…しょうがないわね。",
     "私のこと嫌いなら、ほっといてよ。でも…ちょっとは気にしてよね！",
-    "もう、あんたのこと考えすぎて困っちゃう…バカ！",
-    "恥ずかしいからあんまり近づかないでよね。…でも、来てほしいな。",
+    "恥ずかしいからあんまり近づかないでよね。…でも、来てほしいな。"
 ]
 
-@app.route("/callback", methods=['POST'])
-def callback():
-    signature = request.headers['X-Line-Signature']
-    body = request.get_data(as_text=True)
-
-    try:
-        handler.handle(body, signature)
-    except InvalidSignatureError:
-        abort(400)
-
-    return 'OK'
-
-@handler.add(MessageEvent, message=TextMessage)
-def handle_message(event):
-    print(f"Received message: {event.message.text}")
-    user_text = event.message.text.lower()  # ユーザーの発言を小文字に変換（マッチしやすくする）
-
-    # キーワードに応じた返信分岐
-    if "好き" in user_text:
-        reply = "す、好きって…バカじゃないの！？…でも、ちょっと嬉しいかも…"
-    elif "うざい" in user_text:
-        reply = "は？あんたに言われたくないし！"
-    elif "寂しい" in user_text:
-        reply = "べ、別に寂しくなんてないけど…ちょっとだけなら話してあげてもいいわよ？"
-    elif "かわいい" in user_text:
-        reply = "か、かわいい！？…う、うるさい！"
-    elif "バカ" in user_text:
-        reply = "バカって言う方がバカなんだから！"
-    else:
-        # 通常のツンデレ返信からランダムに選ぶ
-        reply = random.choice(tsundere_replies)
-
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=reply)
-    )
-#キーワードごとのランダムな返答リスト
+# キーワードに対するランダムな返答集
 response_map = {
-    "おはよう": ["お、おはよう...って、なんであたしが先に挨拶しなきゃいけないのよ！",
-         "ふーん、ちゃんと起きれるんだ...あんたのくせにすごいじゃない！",
+    "おはよう": [
+        "お、おはよう...って、なんであたしが先に挨拶しなきゃいけないのよ！",
+        "ふーん、ちゃんと起きれるんだ...あんたのくせにすごいじゃない！",
         "は？別にあんたが起きるの待ってたわけじゃないし。おはよう",
         "べ、別にあんたのために言ってるわけじゃないんだからね！おはよう。",
         "おはよう…って、ちゃんと起きてるの？遅刻しないでよね！",
-        "あんたが起きたの見てあげるなんて、珍しいんだから！",
-        "ふん、おはようぐらい自分で言いなさいよね！でも返すわよ。",
-        "おはよう…まぁ、あんたが元気そうで何よりよ。",
-        "朝からうるさいな…でも、挨拶くらいはしてあげるわ。",
-        "あんたのこと、心配してるわけじゃないんだからね！おはよう。",
-        "起きてすぐに話しかけないでよ…でも返事はしてあげる！",
-        "おはようなんて言われると、ちょっとドキッとしちゃうじゃない。",
-        "別にあんたのためじゃないけど…おはよう、今日も頑張りなさいよ！"],
-    "疲れた":["べ、別に心配してるわけじゃないんだからね！でも無理しないでよ。",
+    ],
+    "疲れた": [
+        "べ、別に心配してるわけじゃないんだからね！でも無理しないでよ。",
         "疲れたって…そんなに頑張ってるの？ちょっとは休みなさいよね。",
-        "あんたが疲れてるなんて珍しいわね…たまには甘えてもいいんだから。",
         "はぁ…疲れてるなら、そっとしておいてあげるわよ。",
-        "そんな顔しないでよ…こっちまで疲れちゃうじゃない。",
-        "無理するなって言ってるのに、わかってないんだから！",
-        "疲れたなら、少しだけ私に話してみなさいよ。",
-        "あんたって本当にバカね…でも、そこが可愛いと思うわ。",
-        "あんまり無理すると倒れちゃうわよ？それでもいいの？",
-        "疲れてるのに、なんで笑ってるのよ…変なやつね。",
         "ちょっとくらい甘えたっていいんだからね！",
         "休まなきゃダメよ…ったく、放っておけないじゃない。",
-        "あんたの疲れ、少しは私が癒してあげるわよ。",
-        "疲れたなら、無理して元気なフリしないでよね。",
-        "もう、心配でつい構いたくなるじゃない…バカ。"],
-    "好き":["な、なに言ってんのよ...でもちょっとだけ嬉しいかも。",
+    ],
+    "好き": [
+        "な、なに言ってんのよ...でもちょっとだけ嬉しいかも。",
         "ちょ、ちょっと...もう一回言ってみなさいよ...！",
-        "な、なに言ってるのよ！…でも、私も……ちょっとだけ…そうかも。",
         "急にそんなこと言われたら…ドキドキしちゃうじゃない…！",
-        "べ、別にあんたのことなんて……好きかもしれないけどっ！",
         "うるさいっ…そんなこと言われたら意識しちゃうじゃない！",
-        "あんたのそういうとこ…嫌いじゃないけど、簡単に信じないんだから！",
-        "そ、そんなこと言われても…返事に困るでしょ…ばか。",
         "あーもうっ！……好きとか、簡単に言うな…でも、ありがと。",
-        "本気で言ってるの？……じゃあ、私もちゃんと考えるわよ。",
-        "ど、どうせ冗談でしょ？……え、本気…？わ、私も…かも。",
-        ]
-        }
+    ],
+    "うざい": [
+        "は？あんたに言われたくないし！",
+        "うざいって…あんたにだけは言われたくないんだけど！？",
+    ],
+    "寂しい": [
+        "べ、別に寂しくなんてないけど…ちょっとだけなら話してあげてもいいわよ？",
+        "寂しいなら…私が話し相手になってあげてもいいけど？",
+    ],
+    "かわいい": [
+        "か、かわいい！？…う、うるさい！",
+        "そ、そんなこと言われたら…ちょっと照れるじゃない…",
+    ],
+    "バカ": [
+        "バカって言う方がバカなんだから！",
+        "もう、バカバカ言わないでよ…でも、ちょっと嬉しいかも？",
+    ],
+}
+
+# キーワードに応じたランダム返信を返す関数
 def get_response(keyword: str) -> str:
     responses = response_map.get(keyword)
     if responses:
         return random.choice(responses)
     else:
-        return "なにそれ？…あんたの言ってること、意味わかんないんだけど。"
+        return random.choice(tsundere_replies)
 
+# Webhookエンドポイント
+@app.route("/callback", methods=['POST'])
+def callback():
+    signature = request.headers.get("X-Line-Signature")
+    body = request.get_data(as_text=True)
+    try:
+        handler.handle(body, signature)
+    except InvalidSignatureError:
+        abort(400)
+    return 'OK'
+
+# メッセージイベントのハンドラ
+@handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
-    print(f"Received message: {event.message.text}")
     user_text = event.message.text.lower()
+    print(f"Received message: {user_text}")
 
+    # キーワードのどれかに一致するか確認
     for keyword in response_map.keys():
         if keyword in user_text:
             reply = get_response(keyword)
             break
     else:
-        reply = "なにそれ？…あんたの言ってること、意味わかんないんだけど。"
+        reply = random.choice(tsundere_replies)
 
-    line_bot_api.reply_message(
-        event.reply_token,
-        TextSendMessage(text=reply)
-    )
+    try:
+        line_bot_api.reply_message(
+            event.reply_token,
+            TextSendMessage(text=reply)
+        )
+    except LineBotApiError as e:
+        print(f"LINE返信エラー: {e}")
 
+# Flaskアプリ起動
 if __name__ == "__main__":
-    app.run(host="0.0.0.0" , port=5000)
+    app.run(host="0.0.0.0", port=5000)
